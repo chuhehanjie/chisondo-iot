@@ -1,13 +1,19 @@
 package com.chisondo.iot;
 
+import com.chisondo.iot.device.handler.DeviceChannelInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -35,19 +41,6 @@ import java.util.concurrent.Executors;
 @SpringBootApplication
 @PropertySource(value = "classpath:/properties/local/nettyserver.properties")
 public class Application {
-
-    @Configuration
-    @Profile("production")
-    @PropertySource("classpath:/properties/production/nettyserver.properties")
-    static class Production {
-    }
-
-    @Configuration
-    @Profile("local")
-    @PropertySource({"classpath:/properties/local/nettyserver.properties"})
-    static class Local {
-    }
-
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
@@ -84,18 +77,57 @@ public class Application {
     @Autowired
     org.springframework.core.env.Environment env;
 
+    @Autowired
+    private DeviceChannelInitializer deviceChannelInitializer;
+    /**
+     *
+     * @return
+     */
     @SuppressWarnings("unchecked")
-    @Bean(name = "serverBootstrap")
-    public ServerBootstrap bootstrap() {
+    @Bean(name = "deviceBootstrap")
+    public ServerBootstrap deviceBootstrap() {
 
-        ServerBootstrap b = new ServerBootstrap();
-        b.group(bossGroup(), workerGroup()) //设置时间循环对象，前者用来处理accept事件，后者用于处理已经建立的连接的io
+        ServerBootstrap deviceBootstrap = new ServerBootstrap();
+        //设置时间循环对象，前者用来处理accept事件，后者用于处理已经建立的连接的io
+        deviceBootstrap.group(bossGroup(), workerGroup())
+                .channel(NioServerSocketChannel.class)
+                .handler(new LoggingHandler(LogLevel.ERROR))
+                .childHandler(this.deviceChannelInitializer);
+        /**
+         * 参数设置
+         */
+        Map<ChannelOption<?>, Object> tcpChannelOptions = tcpChannelOptions();
+        Set<ChannelOption<?>> keySet = tcpChannelOptions.keySet();
+        for (@SuppressWarnings("rawtypes") ChannelOption option : keySet) {
+            deviceBootstrap.option(option, tcpChannelOptions.get(option));
+        }
+
+        deviceBootstrap.childOption(ChannelOption.TCP_NODELAY, true);
+        return deviceBootstrap;
+    }
+
+    /**
+     *
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    @Bean(name = "innerSrvBootstrap")
+    public ServerBootstrap innerSrvBootstrap() {
+
+        ServerBootstrap innerSrvBootstrap = new ServerBootstrap();
+
+        EventLoopGroup bossGroup = new NioEventLoopGroup();
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        innerSrvBootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.ERROR))
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        // TODO
+                    protected void initChannel(SocketChannel channel) throws Exception {
+                        System.out.println("channel id = "+channel.id());
+                        channel.pipeline().addLast("http-codec", new HttpServerCodec());
+                        channel.pipeline().addLast("aggregator", new HttpObjectAggregator(65536));
+                        channel.pipeline().addLast("http-chunked", new ChunkedWriteHandler());
                     }
                 });
 
@@ -105,10 +137,11 @@ public class Application {
         Map<ChannelOption<?>, Object> tcpChannelOptions = tcpChannelOptions();
         Set<ChannelOption<?>> keySet = tcpChannelOptions.keySet();
         for (@SuppressWarnings("rawtypes") ChannelOption option : keySet) {
-            b.option(option, tcpChannelOptions.get(option));
+            innerSrvBootstrap.option(option, tcpChannelOptions.get(option));
         }
 
-        return b;
+        innerSrvBootstrap.childOption(ChannelOption.TCP_NODELAY, true);
+        return innerSrvBootstrap;
     }
 
     /*@Autowired

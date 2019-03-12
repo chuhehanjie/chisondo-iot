@@ -16,27 +16,28 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 设备 TCP 服务
+ * 设备 http 服务
+ * 用于 HTTP 与设备通信
  * @author ding.zhong
  * @since Mar 11.2019
  */
 @Slf4j
 @Component
-public class TcpServer4Device {
+public class HttpServer4Device {
 
     private volatile boolean closed;
 
     /**
-     * 用于与设备 TCP 通信的 bootstrap
+     * 内部服务 TCP 通信的 bootstrap
      */
     @Autowired
-    @Qualifier("deviceBootstrap")
-    private ServerBootstrap deviceBootstrap;
+    @Qualifier("innerSrvBootstrap")
+    private ServerBootstrap innerSrvBootstrap;
 
     private Channel serverChannel;
 
-    @Value("deviceTcpPort")
-    private int deviceTcpPort;
+    @Value("deviceHttpPort")
+    private int deviceHttpPort;
 
     /**
      * closeFuture().sync() 阻塞
@@ -46,7 +47,7 @@ public class TcpServer4Device {
     @PostConstruct
     public void start() throws Exception {
         this.closed = false;
-        this.serverChannel =  this.deviceBootstrap.bind(new InetSocketAddress(this.deviceTcpPort)).sync().channel().closeFuture().sync().channel();
+        this.serverChannel =  this.innerSrvBootstrap.bind(new InetSocketAddress(this.deviceHttpPort)).sync().channel().closeFuture().sync().channel();
         this.doBind();
     }
 
@@ -61,13 +62,13 @@ public class TcpServer4Device {
         if (this.closed) {
             return;
         }
-        this.deviceBootstrap.bind(new InetSocketAddress(this.deviceTcpPort)).addListener(new ChannelFutureListener() {
+        this.innerSrvBootstrap.bind(new InetSocketAddress(this.deviceHttpPort)).addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    log.debug("bind port {} successfully.", deviceTcpPort);
+                    log.debug("bind port {} successfully.", deviceHttpPort);
                 } else {
-                    log.error("bind port {} failed.", deviceTcpPort);
+                    log.error("bind port {} failed.", deviceHttpPort);
                     future.channel().eventLoop().schedule(() -> doBind(), 3, TimeUnit.SECONDS);
                 }
             }
