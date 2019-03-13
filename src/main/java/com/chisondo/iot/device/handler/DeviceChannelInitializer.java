@@ -65,7 +65,7 @@ public class DeviceChannelInitializer extends ChannelInitializer<SocketChannel> 
 
     @Autowired
     @Qualifier("deviceServerHandler")
-    private ChannelInboundHandlerAdapter imServerHandler;
+    private ChannelInboundHandlerAdapter deviceServerHandler;
 
 
     @Autowired
@@ -86,7 +86,7 @@ public class DeviceChannelInitializer extends ChannelInitializer<SocketChannel> 
         pipeline.addLast(DECODER);
         pipeline.addLast(ENCODER);
 
-        pipeline.addLast(imServerHandler);
+        pipeline.addLast(this.deviceServerHandler);
         log.debug("SimpleChatClient:{} 连接上！", socketChannel.remoteAddress());
 
     }

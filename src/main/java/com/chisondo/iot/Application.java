@@ -1,6 +1,7 @@
 package com.chisondo.iot;
 
 import com.chisondo.iot.device.handler.DeviceChannelInitializer;
+import com.chisondo.iot.device.handler.HttpServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Spring Java Configuration and Bootstrap
@@ -106,6 +108,9 @@ public class Application {
         return deviceBootstrap;
     }
 
+
+    @Autowired
+    private HttpServerHandler httpServerHandler;
     /**
      *
      * @return
@@ -128,17 +133,18 @@ public class Application {
                         channel.pipeline().addLast("http-codec", new HttpServerCodec());
                         channel.pipeline().addLast("aggregator", new HttpObjectAggregator(65536));
                         channel.pipeline().addLast("http-chunked", new ChunkedWriteHandler());
+                        channel.pipeline().addLast(httpServerHandler);
                     }
                 });
 
         /**
          * 参数设置
          */
-        Map<ChannelOption<?>, Object> tcpChannelOptions = tcpChannelOptions();
+       /* Map<ChannelOption<?>, Object> tcpChannelOptions = tcpChannelOptions();
         Set<ChannelOption<?>> keySet = tcpChannelOptions.keySet();
         for (@SuppressWarnings("rawtypes") ChannelOption option : keySet) {
             innerSrvBootstrap.option(option, tcpChannelOptions.get(option));
-        }
+        }*/
 
         innerSrvBootstrap.childOption(ChannelOption.TCP_NODELAY, true);
         return innerSrvBootstrap;

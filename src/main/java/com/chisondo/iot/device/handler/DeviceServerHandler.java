@@ -1,6 +1,10 @@
 package com.chisondo.iot.device.handler;
+import com.chisondo.iot.device.request.WorkMsg;
 
 
+import com.alibaba.fastjson.JSONObject;
+import com.chisondo.iot.device.request.StartWork4DevReq;
+import com.chisondo.iot.http.request.StartWorkingReq;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -19,14 +23,14 @@ import java.util.concurrent.ExecutorService;
 
 
 /**
- * 服务端 channel
+ * 设备服务 hanlder
  * @author ding.zhong
  */
 @Slf4j
 @Component
-@Qualifier("simpleChatServerHandler")
+@Qualifier("deviceServerHandler")
 @ChannelHandler.Sharable
-public class DeviceServerHandler extends SimpleChannelInboundHandler<String> { // (1)
+public class DeviceServerHandler extends SimpleChannelInboundHandler<Object> { // (1)
 
     /**
      * A thread-safe Set  Using ChannelGroup, you can categorize Channels into a meaningful group.
@@ -56,10 +60,10 @@ public class DeviceServerHandler extends SimpleChannelInboundHandler<String> { /
     private ExecutorService executorService;
 
     @Autowired
-    StringRedisTemplate redisClient;
+    private StringRedisTemplate redisClient;
 
     @Autowired
-    Jedis jedis;
+    private Jedis jedis;
 
 
     @Override
@@ -101,16 +105,41 @@ public class DeviceServerHandler extends SimpleChannelInboundHandler<String> { /
 
     /**
      * @param ctx
-     * @param s
+     * @param
      * @throws Exception
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String s) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
 //        log.debug("do channelRead0:"+s);
 
         //json 处理使用mongo 的document
-        Channel incoming = ctx.channel();
-        doRule(incoming, s);
+        Channel deviceChannel = ctx.channel();
+
+        // TODO 应该由 decoder 解码成传递给设备的对象
+        if (msg instanceof StartWorkingReq) {
+            StartWorkingReq startWorkingReq = (StartWorkingReq) msg;
+            /*下发沏茶，洗茶，烧水指令，设备收到指令后按对应参数开始工作。
+            参数说明：
+            soak（设定沏茶时间） 取值与waterlevel（设定出水量）有关，每一档出水量都会对应一个最小沏茶时间，如果传入的设定沏茶时间soak 小于 设定出水量的最小时间则以最小时间为准，屏幕以最小沏茶时间开始倒计时。
+            如：设置出水量300ml，抽水+出水时间最少需要90秒（不浸泡），传入的设定沏茶时间soak为70秒，则以最小时间90秒为准，设备屏幕从90秒开始倒计时。
+            {"action":"startwork","deviceID":"898398492","msg":{"temperature":100,"soak":120,"waterlevel":200}}
+            响应：
+            {"retn":200,"desc":"REQSUCCESS","action":"startworkok","deviceID":"898398492","msg":{"state":0,"stateinfo":"EXESUCCESS"}}*/
+
+            StartWork4DevReq startWork4DevReq = new StartWork4DevReq();
+            startWork4DevReq.setAction("");
+            startWork4DevReq.setDeviceID(startWorkingReq.getDeviceId());
+            WorkMsg workMsg = new WorkMsg();
+            workMsg.setTemperature(startWorkingReq.getTemperature());
+            workMsg.setSoak(startWorkingReq.getSoak());
+            workMsg.setWaterlevel(startWorkingReq.getWaterlevel());
+            startWork4DevReq.setMsg(workMsg);
+            deviceChannel.writeAndFlush(JSONObject.toJSONString(startWork4DevReq));
+
+        }
+
+        // TODO 接收设备的请求
+        //doRule(incoming, s);
 
 //		for (Channel channel : channels) {
 //            if (channel != incoming){
