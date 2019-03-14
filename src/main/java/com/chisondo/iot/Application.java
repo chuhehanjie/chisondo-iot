@@ -15,6 +15,7 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -41,7 +42,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 通过注解将配置与代码整合到一起,ServerBootstrap初始化
  */
 @SpringBootApplication
-@PropertySource(value = "classpath:/properties/local/nettyserver.properties")
+@Slf4j
 public class Application {
 
     public static void main(String[] args) {
@@ -49,31 +50,31 @@ public class Application {
     }
 
 
-    @Value("${redis.addres}")
+    @Value("${redis.address}")
     private String redisAddres;
 
     @Value("${redis.port}")
     private int redisPort;
 
-    @Value("${tcp.port}")
+    @Value("${netty.tcp.port}")
     private int tcpPort;
 
-    @Value("${boss.thread.count}")
+    @Value("${netty.boss.thread.count}")
     private int bossCount;
 
-    @Value("${worker.thread.count}")
+    @Value("${netty.worker.thread.count}")
     private int workerCount;
 
-    @Value("${so.keepalive}")
+    @Value("${netty.so.keepalive}")
     private boolean keepAlive;
 
-    @Value("${so.backlog}")
+    @Value("${netty.so.backlog}")
     private int backlog;
 
-    @Value("${msg.length}")
+    @Value("${netty.msg.length}")
     private int msglength;
 
-    @Value("${bi.pool}")
+    @Value("${netty.bi.pool}")
     private int bipool;
 
     @Autowired
@@ -129,7 +130,7 @@ public class Application {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel channel) throws Exception {
-                        System.out.println("channel id = "+channel.id());
+                        log.info("channel id = "+channel.id());
                         channel.pipeline().addLast("http-codec", new HttpServerCodec());
                         channel.pipeline().addLast("aggregator", new HttpObjectAggregator(65536));
                         channel.pipeline().addLast("http-chunked", new ChunkedWriteHandler());

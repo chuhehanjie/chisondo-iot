@@ -36,8 +36,8 @@ public class HttpServer4Device {
 
     private Channel serverChannel;
 
-    @Value("deviceHttpPort")
-    private int deviceHttpPort;
+//    @Value("netty.deviceHttpPort")
+    private String deviceHttpPort = "8099";
 
     /**
      * closeFuture().sync() 阻塞
@@ -47,7 +47,7 @@ public class HttpServer4Device {
     @PostConstruct
     public void start() throws Exception {
         this.closed = false;
-        this.serverChannel =  this.innerSrvBootstrap.bind(new InetSocketAddress(this.deviceHttpPort)).sync().channel().closeFuture().sync().channel();
+//        this.serverChannel =  this.innerSrvBootstrap.bind(new InetSocketAddress(Integer.valueOf(this.deviceHttpPort))).sync().channel().closeFuture().sync().channel();
         this.doBind();
     }
 
@@ -62,15 +62,13 @@ public class HttpServer4Device {
         if (this.closed) {
             return;
         }
-        this.innerSrvBootstrap.bind(new InetSocketAddress(this.deviceHttpPort)).addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (future.isSuccess()) {
-                    log.debug("bind port {} successfully.", deviceHttpPort);
-                } else {
-                    log.error("bind port {} failed.", deviceHttpPort);
-                    future.channel().eventLoop().schedule(() -> doBind(), 3, TimeUnit.SECONDS);
-                }
+        this.innerSrvBootstrap.bind(new InetSocketAddress(Integer.valueOf(this.deviceHttpPort))).addListener((f) ->{
+            ChannelFuture future = (ChannelFuture) f;
+            if (future.isSuccess()) {
+                log.info("bind http port {} successfully.", deviceHttpPort);
+            } else {
+                log.error("bind http port {} failed.", deviceHttpPort);
+                future.channel().eventLoop().schedule(() -> doBind(), 3, TimeUnit.SECONDS);
             }
         });
     }

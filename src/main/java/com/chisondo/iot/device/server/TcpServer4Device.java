@@ -35,8 +35,8 @@ public class TcpServer4Device {
 
     private Channel serverChannel;
 
-    @Value("deviceTcpPort")
-    private int deviceTcpPort;
+//    @Value("deviceTcpPort")
+    private int deviceTcpPort = 1658;
 
     /**
      * closeFuture().sync() 阻塞
@@ -45,8 +45,11 @@ public class TcpServer4Device {
      */
     @PostConstruct
     public void start() throws Exception {
+//        new Thread(() -> {
+//
+//        }).zstart();
         this.closed = false;
-        this.serverChannel =  this.deviceBootstrap.bind(new InetSocketAddress(this.deviceTcpPort)).sync().channel().closeFuture().sync().channel();
+        // this.serverChannel =  this.deviceBootstrap.bind(new InetSocketAddress(this.deviceTcpPort)).sync().channel().closeFuture().sync().channel();
         this.doBind();
     }
 
@@ -58,19 +61,29 @@ public class TcpServer4Device {
     }
 
     private void doBind() {
+        log.info("start doBind");
         if (this.closed) {
             return;
         }
-        this.deviceBootstrap.bind(new InetSocketAddress(this.deviceTcpPort)).addListener(new ChannelFutureListener() {
+        this.deviceBootstrap.bind(new InetSocketAddress(this.deviceTcpPort)).addListener((f) -> {
+            ChannelFuture future = (ChannelFuture) f;
+            if (future.isSuccess()) {
+                log.info("bind port {} successfully.", deviceTcpPort);
+            } else {
+                log.error("bind port {} failed.", deviceTcpPort);
+                future.channel().eventLoop().schedule(() -> doBind(), 3, TimeUnit.SECONDS);
+            }
+        });
+        /*new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    log.debug("bind port {} successfully.", deviceTcpPort);
+                    log.info("bind port {} successfully.", deviceTcpPort);
                 } else {
                     log.error("bind port {} failed.", deviceTcpPort);
                     future.channel().eventLoop().schedule(() -> doBind(), 3, TimeUnit.SECONDS);
                 }
             }
-        });
+        }*/
     }
 }

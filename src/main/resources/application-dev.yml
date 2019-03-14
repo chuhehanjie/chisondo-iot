@@ -1,3 +1,21 @@
 redis:
   address: localhost
   port: 6379
+netty:
+  tcp:
+    port: 7788
+  boss:
+    thread:
+      count: 2
+  worker:
+    thread:
+      count: 20
+  so:
+    keepalive: true
+    backlog: 800
+  msg:
+    length: 2048
+  bi:
+    pool: 20
+  deviceHttpPort: 8099
+deviceTcpPort: 1658
