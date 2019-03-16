@@ -43,16 +43,16 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Qualifier("deviceChannelInitializer")
 public class DeviceChannelInitializer extends ChannelInitializer<SocketChannel> {
-    private final SslContext sslCtx;
+    private SslContext sslCtx;
 
     public DeviceChannelInitializer(SslContext sslCtx) {
         this.sslCtx = sslCtx;
     }
 
     public DeviceChannelInitializer() throws SSLException, CertificateException {
-        SelfSignedCertificate ssc = new SelfSignedCertificate();
+        /*SelfSignedCertificate ssc = new SelfSignedCertificate();
         SslContext sslCtx = SslContext.newServerContext(ssc.certificate(), ssc.privateKey());
-        this.sslCtx = sslCtx;
+        this.sslCtx = sslCtx;*/
     }
 
     //心跳
@@ -60,8 +60,8 @@ public class DeviceChannelInitializer extends ChannelInitializer<SocketChannel> 
     private static final int WRITE_IDEL_TIME_OUT = 216;// 写超时
     private static final int ALL_IDEL_TIME_OUT = 300; // 所有超时
 
-    private static final StringDecoder DECODER = new StringDecoder();
-    private static final StringEncoder ENCODER = new StringEncoder();
+    private static final StringDecoder DECODER = new DeviceServerDecoder();
+    private static final StringEncoder ENCODER = new DeviceServerEncoder();
 
     @Autowired
     @Qualifier("deviceServerHandler")
@@ -76,7 +76,7 @@ public class DeviceChannelInitializer extends ChannelInitializer<SocketChannel> 
     protected void initChannel(SocketChannel socketChannel) throws Exception {
         ChannelPipeline pipeline = socketChannel.pipeline();
 
-        pipeline.addLast(sslCtx.newHandler(socketChannel.alloc()));
+        //pipeline.addLast(sslCtx.newHandler(socketChannel.alloc()));
         pipeline.addLast(new IdleStateHandler(READ_IDEL_TIME_OUT, WRITE_IDEL_TIME_OUT, ALL_IDEL_TIME_OUT, TimeUnit.SECONDS));
         pipeline.addLast(new HeartbeatServerHandler());
 

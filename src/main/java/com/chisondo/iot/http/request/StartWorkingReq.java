@@ -3,6 +3,7 @@ package com.chisondo.iot.http.request;
 import java.io.Serializable;
 
 /**
+ * http server -->> 设备 server -->> 沏茶器
  * 启动或预约泡茶请求
  * 由 http 发送过来
  */

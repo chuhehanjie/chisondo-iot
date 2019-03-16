@@ -1,12 +1,11 @@
 package com.chisondo.iot;
 
 import com.chisondo.iot.device.handler.DeviceChannelInitializer;
-import com.chisondo.iot.device.handler.HttpServerHandler;
+import com.chisondo.iot.http.handler.HttpServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -21,9 +20,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.PropertySource;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -34,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Spring Java Configuration and Bootstrap
@@ -99,9 +94,8 @@ public class Application {
         /**
          * 参数设置
          */
-        Map<ChannelOption<?>, Object> tcpChannelOptions = tcpChannelOptions();
-        Set<ChannelOption<?>> keySet = tcpChannelOptions.keySet();
-        for (@SuppressWarnings("rawtypes") ChannelOption option : keySet) {
+        Map<ChannelOption<?>, Object> tcpChannelOptions = this.tcpChannelOptions();
+        for (@SuppressWarnings("rawtypes") ChannelOption option : tcpChannelOptions.keySet()) {
             deviceBootstrap.option(option, tcpChannelOptions.get(option));
         }
 
@@ -161,6 +155,7 @@ public class Application {
         Map<ChannelOption<?>, Object> options = new HashMap<ChannelOption<?>, Object>();
         options.put(ChannelOption.SO_KEEPALIVE, keepAlive);
         options.put(ChannelOption.SO_BACKLOG, backlog);
+        //options.put(ChannelOption.AUTO_READ, true);
         return options;
     }
 

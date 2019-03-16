@@ -13,6 +13,7 @@ public class DeviceChannelManager {
 
     public static void addDeviceChannel(Device device, Channel channel) {
         deviceChannelMap.put(device, channel);
+        System.out.println("deviceChannelMap size = " + deviceChannelMap.size());
     }
 
     public static Channel getChannelByDevice(Device device) {

@@ -1,4 +1,4 @@
-package com.chisondo.iot.device.handler;
+package com.chisondo.iot.http.handler;
 
 
 import com.alibaba.fastjson.JSONObject;
@@ -35,13 +35,13 @@ import static io.netty.buffer.Unpooled.copiedBuffer;
 @Component
 @Qualifier("httpServerHandler")
 @ChannelHandler.Sharable
-public class HttpServerHandler extends SimpleChannelInboundHandler<Object> { // (1)
+public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> { // (1)
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {  // (2)
         Channel deviceChannel = ctx.channel();
 
-        log.debug("设备[{}]加入", deviceChannel.remoteAddress());
+        log.info("APP 请求地址:{}", deviceChannel.remoteAddress());
     }
 
     @Override
@@ -55,10 +55,16 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> { // 
      * @throws Exception
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 
         // 接收由 http 发送的消息
         Channel channel = ctx.channel();
+        if (request.method() == HttpMethod.GET) {
+
+        } else if (request.method() == HttpMethod.POST) {
+            String json = this.getJSONFromRequest(request);
+
+        }
         if (true) {
             String data = "Hello World";
             ByteBuf buf = copiedBuffer(data, CharsetUtil.UTF_8);
@@ -68,7 +74,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> { // 
         }
 
         // TODO 应该使用 decoder 解码为对象 后续实现
-        HttpServerReq req = JSONObject.parseObject(msg.toString(), HttpServerReq.class);
+        HttpServerReq req = null; // JSONObject.parseObject(msg.toString(), HttpServerReq.class);
 
         if (ObjectUtils.nullSafeEquals(req.getType(), "START_WORING")) {
             StartWorkingReq startWorkingReq = JSONObject.parseObject(req.getBody(), StartWorkingReq.class);
@@ -101,16 +107,6 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> { // 
         }
         return response;
     }
-    /**
-     * 按规则处理指令
-     *
-     * @param s
-     * @param incoming
-     */
-    private void doRule(Channel incoming, String s) {
-    }
-
-
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception { // (5)
@@ -135,27 +131,20 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> { // 
     private Map<String, Object> getGetParamsFromChannel(FullHttpRequest fullHttpRequest) {
 
         Map<String, Object> params = new HashMap<String, Object>();
-
-        if (fullHttpRequest.method() == HttpMethod.GET) {
-            // 处理get请求
-            QueryStringDecoder decoder = new QueryStringDecoder(fullHttpRequest.uri());
-            Map<String, List<String>> paramList = decoder.parameters();
-            for (Map.Entry<String, List<String>> entry : paramList.entrySet()) {
-                params.put(entry.getKey(), entry.getValue().get(0));
-            }
-            return params;
-        } else {
-            return null;
+        // 处理get请求
+        QueryStringDecoder decoder = new QueryStringDecoder(fullHttpRequest.uri());
+        Map<String, List<String>> paramList = decoder.parameters();
+        for (Map.Entry<String, List<String>> entry : paramList.entrySet()) {
+            params.put(entry.getKey(), entry.getValue().get(0));
         }
-
+        return params;
     }
 
     /*
      * 获取POST方式传递的参数
      */
     private Map<String, Object> getPostParamsFromChannel(FullHttpRequest fullHttpRequest) {
-
-        Map<String, Object> params = new HashMap<String, Object>();
+        Map<String, Object> params = new HashMap<>();
 
         if (fullHttpRequest.method() == HttpMethod.POST) {
             // 处理POST请求
@@ -164,7 +153,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> { // 
                 params  = getFormParams(fullHttpRequest);
             } else if (strContentType.contains("application/json")) {
                 try {
-                    params = getJSONParams(fullHttpRequest);
+                    String json = getJSONFromRequest(fullHttpRequest);
+                    params = JSONObject.parseObject(json, Map.class);
                 } catch (UnsupportedEncodingException e) {
                     return null;
                 }
@@ -199,18 +189,13 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> { // 
     /*
      * 解析json数据（Content-Type = application/json）
      */
-    private Map<String, Object> getJSONParams(FullHttpRequest fullHttpRequest) throws UnsupportedEncodingException {
+    private String getJSONFromRequest(FullHttpRequest fullHttpRequest) throws UnsupportedEncodingException {
         Map<String, Object> params = new HashMap<String, Object>();
 
         ByteBuf content = fullHttpRequest.content();
         byte[] reqContent = new byte[content.readableBytes()];
         content.readBytes(reqContent);
-        String strContent = new String(reqContent, "UTF-8");
-        JSONObject jsonParams = JSONObject.parseObject(strContent);
-        for (Object key : jsonParams.keySet()) {
-            params.put(key.toString(), jsonParams.get(key));
-        }
-
-        return params;
+        String json = new String(reqContent, "UTF-8");
+        return json;
     }
 }

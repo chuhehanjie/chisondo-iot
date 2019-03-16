@@ -1,16 +1,20 @@
 package com.chisondo.iot.device.handler;
-import com.chisondo.iot.device.request.WorkMsg;
-
 
 import com.alibaba.fastjson.JSONObject;
+import com.chisondo.iot.common.Device;
+import com.chisondo.iot.device.request.DevStatusReportReq;
 import com.chisondo.iot.device.request.StartWork4DevReq;
+import com.chisondo.iot.device.request.WorkMsg;
+import com.chisondo.iot.device.server.DeviceChannelManager;
 import com.chisondo.iot.http.request.StartWorkingReq;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +74,7 @@ public class DeviceServerHandler extends SimpleChannelInboundHandler<Object> { /
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {  // (2)
         Channel deviceChannel = ctx.channel();
 
-        log.debug("设备[{}]加入", deviceChannel.remoteAddress());
+        log.info("设备[{}]加入", deviceChannel.remoteAddress());
         // Broadcast a message to multiple Channels
         // channels.writeAndFlush("[SERVER] - " + incoming.remoteAddress() + " 加入,总人数:" + channels.size() + "\n");
 
@@ -81,6 +85,7 @@ public class DeviceServerHandler extends SimpleChannelInboundHandler<Object> { /
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {  // (3)
         Channel incoming = ctx.channel();
+        log.error("移除设备[{}]通道", incoming.remoteAddress());
 
 /*
         idAndName.remove(driverAndDevice.inverse().get(incoming));
@@ -110,13 +115,20 @@ public class DeviceServerHandler extends SimpleChannelInboundHandler<Object> { /
      */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-//        log.debug("do channelRead0:"+s);
-
-        //json 处理使用mongo 的document
         Channel deviceChannel = ctx.channel();
 
-        // TODO 应该由 decoder 解码成传递给设备的对象
-        if (msg instanceof StartWorkingReq) {
+        log.info("读取设备[{}]发送的消息:{}", deviceChannel.remoteAddress(), msg);
+
+        if (msg instanceof DevStatusReportReq) {
+            // 设备心跳上报请求
+            DevStatusReportReq reportReq = (DevStatusReportReq) msg;
+            log.info("接收设备[{}]心跳上报请求!", reportReq.getDeviceID());
+            Device device = new Device(reportReq.getDeviceID(), "dev-" + reportReq.getDeviceID());
+            if (null == DeviceChannelManager.getDeviceById(device.getId())) {
+                DeviceChannelManager.addDeviceChannel(device, ctx.channel());
+            }
+            deviceChannel.writeAndFlush(Unpooled.copiedBuffer("I've got it\n", CharsetUtil.UTF_8));
+        } else if (msg instanceof StartWorkingReq) {
             StartWorkingReq startWorkingReq = (StartWorkingReq) msg;
             /*下发沏茶，洗茶，烧水指令，设备收到指令后按对应参数开始工作。
             参数说明：
@@ -602,7 +614,8 @@ public class DeviceServerHandler extends SimpleChannelInboundHandler<Object> { /
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception { // (6)
         Channel incoming = ctx.channel();
-        log.debug("SimpleChatClient:" + incoming.remoteAddress() + "掉线,总人数:" + channels.size() + "\n");
+        log.info("SimpleChatClient = " + incoming.remoteAddress() + " 掉线, 总人数 = " + channels.size() + "\n");
+//        DeviceChannelManager.remoteDeviceChannel();
     }
 
     @Override

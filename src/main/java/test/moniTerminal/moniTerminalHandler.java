@@ -2,10 +2,12 @@ package test.moniTerminal;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import test.CountHelper;
 
@@ -18,11 +20,17 @@ import test.CountHelper;
  */
 public class moniTerminalHandler  extends SimpleChannelInboundHandler<ByteBuf>{
 
+	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		System.out.println("模拟终端与网关通道建立。。。。。。");
-		System.out.println("模拟终端本地ip："+ctx.channel().localAddress());
+		System.out.println("模拟终端本地ip：" + ctx.channel().localAddress());
+		String data = "{\"action\":\"statuspush\",\"actionFlag\":1,\"deviceID\":\"7788520\",\"msg\":{\"errorstatus\":0,\"nowwarm\":65,\"remaintime\":\"1234\",\"soak\":100,\"taststatus\":2,\"temperature\":70,\"warmstatus\":0,\"waterlevel\":150,\"workstatus\":0}}\\n";
+//		ctx.writeAndFlush(Unpooled.copiedBuffer("Netty rocks!\n", CharsetUtil.UTF_8));
+		ctx.writeAndFlush(Unpooled.copiedBuffer("{\"name\":\"chris\"}\n", CharsetUtil.UTF_8));
+        System.out.println("客户端 active 了");
 	}
 
+	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		// TODO Auto-generated method stub
 		System.err.println("出现异常。。。");
@@ -31,10 +39,10 @@ public class moniTerminalHandler  extends SimpleChannelInboundHandler<ByteBuf>{
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
 		// TODO Auto-generated method stub
-		ByteBuf recieveMsg=(ByteBuf) msg;
+		ByteBuf recieveMsg = msg;
 		String code = ByteBufUtil.hexDump(recieveMsg).toUpperCase();//将bytebuf中的可读字节 转换成16进制数字符串
 		
-		System.out.println("接收总数："+CountHelper.clientRecieveCount.addAndGet(1)+" ;模拟终端收到数据w："+code);
+		System.out.println("msg = " + msg + "接收总数：" + CountHelper.clientRecieveCount.addAndGet(1) + " ;模拟终端收到数据w：" + code);
 	}
 	
 }

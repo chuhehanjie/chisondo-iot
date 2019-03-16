@@ -5,15 +5,23 @@ import java.io.Serializable;
 public class Device implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private Integer id;
+    private String id;
 
     private String name;
 
-    public Integer getId() {
+    public Device() {
+    }
+
+    public Device(String id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(String id) {
         this.id = id;
     }
 

@@ -1,9 +1,12 @@
 package test.moniTerminal;
+import com.alibaba.fastjson.JSONObject;
+import com.chisondo.iot.common.constant.Constant;
+import com.chisondo.iot.device.request.DevStatusMsg;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.chisondo.iot.gate.util.StringUtils;
+import com.chisondo.iot.device.request.DevStatusReportReq;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -13,6 +16,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.CharsetUtil;
 import test.CountHelper;
 
 /**
@@ -45,19 +49,50 @@ public class moniTerminal {
 	}
 	public static void startClient(Bootstrap bootstrap) throws InterruptedException{
 		//服务端是绑定到服务器某个端口就行，但是客户端是需要连接到指定ip+指定端口的 因此方法不一样
-				ChannelFuture channelFuture=bootstrap.connect("127.0.0.1", 9811).sync();
-				for(int i = 0; i<1 ; i++){
-					byte[] data = StringUtils.decodeHex("681E0081052360541304000024B801000100F007E2071A040F25090000120416");
+				ChannelFuture channelFuture=bootstrap.connect("127.0.0.1", 1658).sync();
+				int count = 0;
+				while (channelFuture.channel().isActive()) {
+				    // 只要与服务端连接，就上报设备信息
+                    String msg = getDevStatusInfo();
+                    System.out.println("msg[" + count + "] = " + msg);
+//                    channelFuture.channel().writeAndFlush(Unpooled.copiedBuffer("{\"action\":\"statuspush\",\"actionFlag\":1,\"deviceID\":\"7788520\"}\n", CharsetUtil.UTF_8));
+                    channelFuture.channel().writeAndFlush(Unpooled.copiedBuffer(msg + "\n", CharsetUtil.UTF_8));
+                    Thread.sleep(5000);
+                    if (++count == 10) {
+                        break;
+                    }
+                }
+				/*for(int i = 0; i<1 ; i++){
+					byte[] data = StringUtils.decodeHex("681E0081052360541304000024B801000100F007E2071A040F25090000120416\n");
 					
 					channelFuture.channel().writeAndFlush(Unpooled.wrappedBuffer(data));
 					
-					Thread.sleep(2000);
-				}
+					Thread.sleep(1000);
+				}*/
 				channelFuture.channel().closeFuture().sync();
 				work.shutdownGracefully();
 	}
-	
-	public static void main(String[] args) throws InterruptedException {
+
+    private static String getDevStatusInfo() {
+        DevStatusReportReq reportReq = new DevStatusReportReq();
+        reportReq.setAction("statuspush");
+        reportReq.setActionFlag(Constant.DevStatus.HEART_BEAT);
+        reportReq.setDeviceID("7788520");
+        DevStatusMsg msg = new DevStatusMsg();
+        msg.setWorkstatus(Constant.WorkStatus.IDLE);
+        msg.setWarmstatus(Constant.WarmStatus.NOT_KEEP_WARM);
+        msg.setTaststatus(Constant.ConcentrationStatus.MIDDLE);
+        msg.setTemperature(70);
+        msg.setSoak(100);
+        msg.setWaterlevel(150);
+        msg.setRemaintime("1234");
+        msg.setErrorstatus(Constant.ErrorStatus.NORMAL);
+        msg.setNowwarm(65);
+        reportReq.setMsg(msg);
+        return JSONObject.toJSONString(reportReq);
+    }
+
+    public static void main(String[] args) throws InterruptedException {
 		/**
 		 * 模拟终端启动
 		 */

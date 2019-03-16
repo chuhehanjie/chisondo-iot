@@ -1,4 +1,4 @@
-package com.chisondo.iot.device.server;
+package com.chisondo.iot.http.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
