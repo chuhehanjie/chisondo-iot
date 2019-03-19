@@ -51,7 +51,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
      */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-
+        // TODO http 路由处理 https://blog.csdn.net/joeyon1985/article/details/53586004
         // 接收由 http 发送的消息
         Channel httpChannel = ctx.channel();
         if (request.method() == HttpMethod.GET) {
