@@ -37,7 +37,7 @@ public class HttpServer4Device {
     private Channel serverChannel;
 
 //    @Value("netty.deviceHttpPort")
-    private String deviceHttpPort = "8099";
+    private String deviceHttpPort = "8188";
 
     /**
      * closeFuture().sync() 阻塞

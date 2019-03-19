@@ -1,19 +1,22 @@
 package com.chisondo.iot.device.handler;
 
 import com.alibaba.fastjson.JSONObject;
-import com.chisondo.iot.common.Device;
+import com.chisondo.iot.common.utils.IOTUtils;
 import com.chisondo.iot.device.request.DevStatusReportReq;
 import com.chisondo.iot.device.request.StartWork4DevReq;
 import com.chisondo.iot.device.request.WorkMsg;
-import com.chisondo.iot.device.server.DeviceChannelManager;
+import com.chisondo.iot.device.response.DeviceServerResp;
+import com.chisondo.iot.device.server.DevTcpChannelManager;
+import com.chisondo.iot.http.request.DeviceHttpReq;
 import com.chisondo.iot.http.request.StartWorkingReq;
+import com.chisondo.iot.http.server.DevHttpChannelManager;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
@@ -119,15 +122,40 @@ public class DeviceServerHandler extends SimpleChannelInboundHandler<Object> { /
 
         log.info("读取设备[{}]发送的消息:{}", deviceChannel.remoteAddress(), msg);
 
-        if (msg instanceof DevStatusReportReq) {
+        if (msg instanceof DeviceHttpReq) {
+            DeviceHttpReq req = (DeviceHttpReq) msg;
+            // 向设备发送请求
+            deviceChannel.writeAndFlush(JSONObject.toJSONString(req));
+//            deviceChannel.writeAndFlush(Unpooled.copiedBuffer(JSONObject.toJSONString(req) + "\n", CharsetUtil.UTF_8));
+        } else if (msg instanceof DeviceServerResp) {
+            // 接收设备发送的响应，并将响应发到 http server
+            DeviceServerResp resp = (DeviceServerResp) msg;
+            if (null == resp.getDeviceID()) {
+                System.out.println("resp = " + JSONObject.toJSONString(resp));
+                return;
+            }
+            Channel httpChannel = DevHttpChannelManager.getChannelByDeviceId(resp.getDeviceID());
+            if (null != httpChannel) {
+                ByteBuf buf = Unpooled.copiedBuffer(JSONObject.toJSONString(resp), CharsetUtil.UTF_8);
+                FullHttpResponse response = IOTUtils.responseOK(HttpResponseStatus.OK, buf);
+                httpChannel.writeAndFlush(response).addListener((obj) -> {
+                    ChannelFuture future = (ChannelFuture) obj;
+                    DevHttpChannelManager.remoteHttpChannel(resp.getDeviceID(), future.channel());
+                    future.channel().close();
+                });
+            } else {
+                System.out.println("resp = " + JSONObject.toJSONString(resp));
+            }
+
+        } else if (msg instanceof DevStatusReportReq) {
             // 设备心跳上报请求
             DevStatusReportReq reportReq = (DevStatusReportReq) msg;
             log.info("接收设备[{}]心跳上报请求!", reportReq.getDeviceID());
-            Device device = new Device(reportReq.getDeviceID(), "dev-" + reportReq.getDeviceID());
-            if (null == DeviceChannelManager.getDeviceById(device.getId())) {
-                DeviceChannelManager.addDeviceChannel(device, ctx.channel());
+            String deviceId = reportReq.getDeviceID();
+            if (null == DevTcpChannelManager.getChannelByDevice(deviceId)) {
+                DevTcpChannelManager.addDeviceChannel(deviceId, ctx.channel());
             }
-            deviceChannel.writeAndFlush(Unpooled.copiedBuffer("I've got it\n", CharsetUtil.UTF_8));
+            deviceChannel.writeAndFlush("{\"action\":200}\n");
         } else if (msg instanceof StartWorkingReq) {
             StartWorkingReq startWorkingReq = (StartWorkingReq) msg;
             /*下发沏茶，洗茶，烧水指令，设备收到指令后按对应参数开始工作。
@@ -148,20 +176,10 @@ public class DeviceServerHandler extends SimpleChannelInboundHandler<Object> { /
             startWork4DevReq.setMsg(workMsg);
             deviceChannel.writeAndFlush(JSONObject.toJSONString(startWork4DevReq));
 
+        } else if (msg instanceof ByteBuf) {
+            System.out.println("this is byteBuf msg.");
+            deviceChannel.writeAndFlush(msg);
         }
-
-        // TODO 接收设备的请求
-        //doRule(incoming, s);
-
-//		for (Channel channel : channels) {
-//            if (channel != incoming){
-//                //channel.writeAndFlush("[" + incoming.remoteAddress() + "]" + s + "\n");
-//            } else {
-//            	channel.writeAndFlush("[you]" + s + "\n");
-//            }
-//        }
-
-
     }
 
     /**

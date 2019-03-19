@@ -16,6 +16,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import test.CountHelper;
 
@@ -42,6 +44,7 @@ public class moniTerminal {
 			@Override
 			protected void initChannel(SocketChannel sc) throws Exception {
 				
+				sc.pipeline().addLast(new StringDecoder());
 				sc.pipeline().addLast(new moniTerminalHandler());
 			}
 		});
@@ -54,11 +57,10 @@ public class moniTerminal {
 				while (channelFuture.channel().isActive()) {
 				    // 只要与服务端连接，就上报设备信息
                     String msg = getDevStatusInfo();
-                    System.out.println("msg[" + count + "] = " + msg);
 //                    channelFuture.channel().writeAndFlush(Unpooled.copiedBuffer("{\"action\":\"statuspush\",\"actionFlag\":1,\"deviceID\":\"7788520\"}\n", CharsetUtil.UTF_8));
                     channelFuture.channel().writeAndFlush(Unpooled.copiedBuffer(msg + "\n", CharsetUtil.UTF_8));
                     Thread.sleep(5000);
-                    if (++count == 10) {
+                    if (++count == 2) {
                         break;
                     }
                 }

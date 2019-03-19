@@ -14,6 +14,8 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -128,6 +130,9 @@ public class Application {
                         channel.pipeline().addLast("http-codec", new HttpServerCodec());
                         channel.pipeline().addLast("aggregator", new HttpObjectAggregator(65536));
                         channel.pipeline().addLast("http-chunked", new ChunkedWriteHandler());
+                        channel.pipeline().addLast(new ReadTimeoutHandler(10));
+                        channel.pipeline().addLast(new WriteTimeoutHandler(1));
+
                         channel.pipeline().addLast(httpServerHandler);
                     }
                 });
