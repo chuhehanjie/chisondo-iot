@@ -54,7 +54,7 @@ public final class IOTUtils {
     /*
      * 获取POST方式传递的参数
      */
-    public static Map<String, Object> getPostParamsFromChannel(FullHttpRequest fullHttpRequest) {
+    public static Map<String, Object> getPostParamsFromRequest(FullHttpRequest fullHttpRequest) {
         Map<String, Object> params = new HashMap<>();
 
         if (fullHttpRequest.method() == HttpMethod.POST) {
