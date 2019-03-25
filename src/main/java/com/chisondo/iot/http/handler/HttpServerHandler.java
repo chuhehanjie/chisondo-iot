@@ -77,7 +77,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             ByteBuf buf = copiedBuffer(data, CharsetUtil.UTF_8);
             FullHttpResponse response = this.responseOK(HttpResponseStatus.OK, buf);
             channel.writeAndFlush(response).addListener((obj) -> {
-                DevHttpChannelManager.remoteHttpChannel(deviceId, future.channel());
+                DevHttpChannelManager.removeHttpChannel(deviceId, future.channel());
                 ChannelFuture future = (ChannelFuture) obj;
                 future.channel().close();
             });

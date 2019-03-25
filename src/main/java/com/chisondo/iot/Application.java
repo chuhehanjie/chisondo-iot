@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.client.RestTemplate;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -195,28 +196,8 @@ public class Application {
         return Executors.newFixedThreadPool(bipool);
     }
 
-    @Bean(name = "jedis")
-    @Deprecated
-    public Jedis jedis() {
-        return new Jedis(this.redisAddres, this.redisPort);
+    @Bean
+    public RestTemplate restTemplate(){
+        return new RestTemplate();
     }
-
-
-    @Bean(name = "jedispool")
-    @Deprecated
-    public JedisPool jedispool() {
-        JedisPool  pool = new JedisPool(new JedisPoolConfig(), this.redisAddres, this.redisPort);
-        return pool;
-    }
-
-//    @Autowired
-//    @Qualifier("mymongo")
-//    private MongoRepository mongo;
-
-
-
-
-
-
-
 }

@@ -21,7 +21,12 @@ public class DevHttpChannelManager {
         return httpChannelMap.get(deviceId);
     }
 
-    public static void remoteHttpChannel(String deviceId, Channel channel) {
+    public static void removeByDeviceId(String deviceId) {
+        if (httpChannelMap.containsKey(deviceId)) {
+            httpChannelMap.remove(deviceId);
+        }
+    }
+    public static void removeHttpChannel(String deviceId, Channel channel) {
         Channel target = httpChannelMap.get(deviceId);
         if (!ObjectUtils.isEmpty(target) && ObjectUtils.nullSafeEquals(channel.id(), target.id())) {
             httpChannelMap.remove(deviceId);

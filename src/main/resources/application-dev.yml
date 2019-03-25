@@ -19,3 +19,7 @@ netty:
     pool: 20
   deviceHttpPort: 8099
 deviceTcpPort: 1658
+chris:
+  interface:
+    url:
+      appHttpURL: http://127.0.0.1:8086/

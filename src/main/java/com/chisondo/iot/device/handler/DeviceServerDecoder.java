@@ -16,13 +16,14 @@ public class DeviceServerDecoder extends StringDecoder {
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
         String json = IOTUtils.convertByteBufToString(msg);
         System.out.println("decoder msg = " + json);
+        // 是否设备状态上报请求
         if (this.isDevStatusReportReq(json)) {
             DevStatusReportReq reportReq = JSONObject.parseObject(json, DevStatusReportReq.class);
             out.add(reportReq);
         } else if (this.isQueryDevStatusResp(json) || this.isErrorResp(json)) {
             DeviceServerResp deviceResp = JSONObject.parseObject(json, DeviceServerResp.class);
             out.add(deviceResp);
-        }else {
+        } else {
             // http request
             DeviceHttpReq req = JSONObject.parseObject(json, DeviceHttpReq.class);
             if (null != req.getAction() && null != req.getDeviceId()) {

@@ -1,6 +1,7 @@
 package com.chisondo.iot.device.request;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * 设备发送指令 -->> 设备TCP服务
@@ -24,6 +25,11 @@ public class DevStatusReportReq implements Serializable {
     private String deviceID;
 
     private DevStatusMsg msg;
+
+    /**
+     * tcp 验证通过时间
+     */
+    private Date tcpValTime;
 
     public String getAction() {
         return action;
@@ -55,5 +61,13 @@ public class DevStatusReportReq implements Serializable {
 
     public void setMsg(DevStatusMsg msg) {
         this.msg = msg;
+    }
+
+    public Date getTcpValTime() {
+        return tcpValTime;
+    }
+
+    public void setTcpValTime(Date tcpValTime) {
+        this.tcpValTime = tcpValTime;
     }
 }

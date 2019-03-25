@@ -60,7 +60,7 @@ public class moniTerminal {
 //                    channelFuture.channel().writeAndFlush(Unpooled.copiedBuffer("{\"action\":\"statuspush\",\"actionFlag\":1,\"deviceID\":\"7788520\"}\n", CharsetUtil.UTF_8));
                     channelFuture.channel().writeAndFlush(Unpooled.copiedBuffer(msg + "\n", CharsetUtil.UTF_8));
                     Thread.sleep(5000);
-                    if (++count == 2) {
+                    if (++count > 0) {
                         break;
                     }
                 }
@@ -79,15 +79,15 @@ public class moniTerminal {
         DevStatusReportReq reportReq = new DevStatusReportReq();
         reportReq.setAction("statuspush");
         reportReq.setActionFlag(Constant.DevStatus.HEART_BEAT);
-        reportReq.setDeviceID("7788520");
+        reportReq.setDeviceID("32839884");
         DevStatusMsg msg = new DevStatusMsg();
-        msg.setWorkstatus(Constant.WorkStatus.IDLE);
-        msg.setWarmstatus(Constant.WarmStatus.NOT_KEEP_WARM);
+        msg.setWorkstatus(Constant.WorkStatus.MAKING_TEA);
+        msg.setWarmstatus(Constant.WarmStatus.KEEPING_WARM);
         msg.setTaststatus(Constant.ConcentrationStatus.MIDDLE);
         msg.setTemperature(70);
         msg.setSoak(100);
         msg.setWaterlevel(150);
-        msg.setRemaintime("1234");
+        msg.setRemaintime("580");
         msg.setErrorstatus(Constant.ErrorStatus.NORMAL);
         msg.setNowwarm(65);
         reportReq.setMsg(msg);

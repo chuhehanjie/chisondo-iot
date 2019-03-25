@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.ObjectUtils;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,11 +22,24 @@ public class DevTcpChannelManager {
         return deviceChannelMap.get(deviceId);
     }
 
-    public static void remoteDeviceChannel(String deviceId, Channel channel) {
+    public static void removeDeviceChannel(String deviceId, Channel channel) {
         Channel target = deviceChannelMap.get(deviceId);
         if (!ObjectUtils.isEmpty(target) && ObjectUtils.nullSafeEquals(channel.id(), target.id())) {
             deviceChannelMap.remove(deviceId);
             log.info("remove tcp channel deviceId = {}", deviceId);
         }
+    }
+
+    public static String removeByChannel(Channel channel) {
+        Iterator<Map.Entry<String, Channel>> it = deviceChannelMap.entrySet().iterator();
+        while(it.hasNext()){
+            Map.Entry<String, Channel> entry = it.next();
+            if (ObjectUtils.nullSafeEquals(channel, entry.getValue())) {
+                log.error("删除了设备[{}]", entry.getKey());
+                it.remove();
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 }
