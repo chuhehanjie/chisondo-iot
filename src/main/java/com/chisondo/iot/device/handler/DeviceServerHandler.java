@@ -29,6 +29,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -134,6 +135,7 @@ public class DeviceServerHandler extends SimpleChannelInboundHandler<Object> { /
             }
             reportReq.setTcpValTime(new Date());
             // TODO 更新 redis 中设备状态
+            this.redisClient.opsForValue().set(reportReq.getDeviceID(), JSONObject.toJSONString(reportReq), 60*20, TimeUnit.SECONDS);
             this.reportDevStatus2App(reportReq);
 //            deviceChannel.writeAndFlush("{\"action\":200}\n");
         } else if (msg instanceof StartWorkingReq) {
